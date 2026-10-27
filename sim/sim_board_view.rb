@@ -98,7 +98,10 @@ module BoardView
       zoom_tab(:matrix, "LED マトリクス")
       zoom_tab(:breadboard, "ブレッドボード")
     end
-    div(id: "board-view", class: "zoom-#{zoom}", style: BoardView.view_style(zoom)) do
+    view_class = @dot_art_editor_on ? "zoom-#{zoom} dot-art-editor" : "zoom-#{zoom}"
+    view_style = BoardView.view_style(zoom)
+    view_style += ";--pen-cursor:#{DotArtEditor.pen_cursor(@dot_pen)}" if @dot_art_editor_on
+    div(id: "board-view", class: view_class, style: view_style) do
       div(id: "board", style: BoardView.board_style(zoom)) do
         img(src: "board/board.webp", class: "board-img", alt: "Adventure Board", draggable: "false")
         board_leds
@@ -110,6 +113,7 @@ module BoardView
       end
     end
     breadboard_tools if zoom == :breadboard
+    dot_art_editor_controls if zoom == :matrix
     breadboard_warnings
   end
 
@@ -279,8 +283,12 @@ module BoardView
     set_zoom(event.target.getAttribute('data-zoom').to_s)
   end
 
-  def on_zoom_matrix(_event)
-    set_zoom("matrix") unless view_zoom == :matrix
+  def on_zoom_matrix(event)
+    if view_zoom != :matrix
+      set_zoom("matrix")
+    elsif @dot_art_editor_on
+      on_dot_art_editor_click(event)
+    end
   end
 
   def on_zoom_breadboard(_event)

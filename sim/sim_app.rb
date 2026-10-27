@@ -75,6 +75,7 @@ end
 
 class SimApp < Funicular::Component
   include BoardView
+  include DotArtEditor
 
   # The tutorial's, in its order (the number is the chapter), then the rest.
   EXAMPLES = [
@@ -981,6 +982,10 @@ class SimApp < Funicular::Component
 
   def run(source)
     begin
+      if @dot_art_editor_on
+        @dot_art_editor_on = false
+        refresh
+      end
       SimApp.stop_task
       AdventureBoard.speaker.stop
       $notelog.clear
@@ -1004,6 +1009,7 @@ class SimApp < Funicular::Component
   def draw
     JS.global.renderPanel($panel.levels_hex)
     draw_breadboard
+    draw_dot_art_editor
     draw_lib_code
     draw_status_led
     draw_notes
