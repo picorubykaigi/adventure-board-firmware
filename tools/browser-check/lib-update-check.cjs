@@ -10,7 +10,8 @@
 //   5. ".mrb にして実機で実行" / "実機の app.mrb にする": the code goes over compiled,
 //      and "app.rb にする" / "app.rb を空にする" take an app.mrb away
 //   6. "対戦ゲームを実機の app.mrb にする": examples/game.mrb goes over as it is, whole
-//      (a .mrb has zero bytes, which the bridge to JS would cut a string at)
+//      (a .mrb has zero bytes, which the bridge to JS would cut a string at). The page is
+//      handed tools/game-mrb/hello_game.mrb as examples/game.mrb, whether or not the game is there
 // The fake shell throws away what comes in while it waits for the terminal
 // to say where the cursor is, as the real one does; no byte may be lost.
 //
@@ -20,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 const { FAKE_SERIAL, termText, TYPES, ROOT } = require('./reconnect-check.cjs');
+const GAME_MRB = `${ROOT}/tools/game-mrb/hello_game.mrb`;
 
 const LIB = {};
 for (const f of ['adventure_board.rb', ...fs.readdirSync(`${ROOT}/lib/adventure_board`).map((f) => `adventure_board/${f}`)]) {
@@ -68,9 +70,18 @@ async function waitStatus(page, text, ms) {
   for (const scenario of ['update', 'disk full', 'reset', 'mrb', 'game']) {
     const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
     const log = [];
-    page.on('console', (m) => log.push(`[${m.type()}] ${m.text()}`));
+    // examples/game.mrb is looked for when the page opens; its 404 until the
+    // game has been committed is not a fault (the game scenario hands one in).
+    page.on('console', (m) => {
+      if ((m.location().url || '').endsWith('/examples/game.mrb')) return;
+      log.push(`[${m.type()}] ${m.text()}`);
+    });
     page.on('pageerror', (e) => log.push(`[pageerror] ${e.message}`));
     await page.addInitScript(FAKE_SERIAL);
+    if (scenario === 'game') {
+      await page.route('**/examples/game.mrb', (route) => route.fulfill({
+        status: 200, contentType: 'application/octet-stream', body: fs.readFileSync(GAME_MRB) }));
+    }
     await page.goto('http://127.0.0.1:8098/sim/');
     await page.waitForFunction(() => (document.getElementById('status') || {}).className === 'ok', null, { timeout: 60000 });
     const files = seed(LIB);
@@ -89,7 +100,7 @@ async function waitStatus(page, text, ms) {
       await page.click('#device-install-game');
       check('game: reports', await waitStatus(page, '/home/app.mrb に書いて実行しています', 30000));
       const sent = await page.evaluate(() => (window.__board.shell.rawHex || {})['/home/app.mrb'] || '');
-      const want = require('fs').readFileSync(require('path').join(ROOT, 'examples', 'game.mrb')).toString('hex');
+      const want = fs.readFileSync(GAME_MRB).toString('hex');
       check(`game: /home/app.mrb is examples/game.mrb byte for byte (${sent.length / 2} of ${want.length / 2} bytes)`, sent === want);
     }
 

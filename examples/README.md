@@ -25,7 +25,8 @@
 - 実機のファームと同じコンパイラで作る（`RITE0400`）。コンソールは、先頭の版がページのコンパイラと違えば送らない
 - 中に入れたライブラリはその時点のもので固まる。`lib/` を直したら作り直す
 - 作り方の例: `docker compose -f docker/compose.yml run --rm shell bash -lc "rake && build/host/bin/mrbc -o examples/game.mrb ゲーム.rb"`
-- 今のものは置き場所の確かめ用で、「hello game」を表示し続けるだけ（ソースは `tools/game-mrb/hello_game.rb`）
+- **まだ置いていない**（対戦ゲームの .mrb は別にコミットされる予定）。無いあいだはボタンが出ない。
+  試すなら `tools/game-mrb/hello_game.mrb`（「hello game」を表示し続けるだけ）を `examples/game.mrb` に写す
 - 実機の `/home/examples` には入らない（ファームが書き出すのは `.rb` だけ）
 
 ## 動かし方
