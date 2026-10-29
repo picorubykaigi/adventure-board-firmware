@@ -79,6 +79,7 @@ canvas は 50ms ごとに仮想チップの中身を映しているので、
 | 実機の app.rb を空にする | Ctrl-C のあと `/home/app.rb` を何もしない 1 行に書き換える。作品をやめて、電源を入れるとプロンプトで止まる基板に戻す |
 | ライブラリを最新にする | ページのいちばん下の「▸ 高度な機能（実機用）」の中。基板の `/lib` をこのページの `lib/`（`SimApp::LIB_FILES`）にそろえる。1 本ずつ読んで比べ、違うものだけ `<パス>.new` に書いてから `mv` で入れ替え、同じ名前の `.mrb` を消して再起動する。全部同じなら何もしない。書く途中で失敗したら `.new` を消して元のまま。量産基板のファームを焼き直さずにライブラリの修正を届けるためのもの（[dev-docs/webserial-console/file-transfer-plan.md](../dev-docs/webserial-console/file-transfer-plan.md)）。偽の基板での確認は `tools/browser-check/lib-update-check.cjs` |
 | .mrb にして実機で実行 / 実機の app.mrb にする | 「▸ 高度な機能（実機用）」の中。コードの欄をページでコンパイルし（`PicoRubyVM::InstructionSequence.compile(src).to_binary`）、`/home/run.mrb` に送って動かす / `/home/app.mrb` に書く。実機の上でコンパイルしないので、その分のメモリが要らない。R2P2 は `app.mrb` を `app.rb` より先に動かすので、［実機の app.rb にする］と［実機の app.rb を空にする］は `app.mrb` があれば消す |
+| 対戦ゲームを実機の app.mrb にする | 「▸ 高度な機能（実機用）」のいちばん下。`games/link_pong.mrb` があるときだけ出る。それを実機の `/home/app.mrb` に送る。下の「対戦ゲーム」 |
 | ライブラリを初期設定に戻す | ページのいちばん下の「▸ 高度な機能（実機用）」の中。基板の `/lib` に残った `.new` と `.mrb` を消し、`/etc/adventure-board-files`（ファームが書いた印）を消して再起動する。起動するときにファームが、自分の版のライブラリを書き直す。`/home` には触らない |
 
 **「実機の端末」は本物の端末（xterm.js）。** つないだあとはそこに打てば R2P2 のシェルがそのまま使える（`ls` `free` `irb` `vim` …）。
@@ -276,3 +277,17 @@ canvas のピクセルを読み戻して 16×16 のテキストに落とすの�
 どちらも C 拡張で、stock の `@picoruby/wasm-wasi` には入っていない。
 `dev-docs/wasm-simulator/README.md` の Stage 2 で、
 emsdk を入れて自前ビルドすれば通せる。
+
+## 対戦ゲーム（games/link_pong.mrb）
+
+コンソールの［対戦ゲームを実機の app.mrb にする］が、`sim/games/link_pong.mrb` を実機の `/home/app.mrb` に送る（ファイルがあるときだけボタンが出る）。
+ライブラリを `require` すると実機のメモリが足りないので、**ゲームと、使うライブラリの部品をまとめて 1 本の .mrb にしたもの**を置く。
+`sim/` の中なので、公開するコンソールにもそのまま入る（`rake site:console_standalone`）。実機の `/home/examples` には入らない。
+
+- 中で `require 'adventure_board'` を呼ばない（呼ぶと実機の `/lib` を読んでコンパイルし、まとめた意味がなくなる）
+- 実機のファームと同じコンパイラで作る（`RITE0400`）。コンソールは、先頭の版がページのコンパイラと違えば送らない
+- 中に入れたライブラリはその時点のもので固まる。`lib/` を直したら作り直す
+- 作り方の例: `docker compose -f docker/compose.yml run --rm shell bash -lc "rake && build/host/bin/mrbc -o sim/games/link_pong.mrb ゲーム.rb"`
+- **まだ置いていない**（別にコミットされる予定）。無いあいだはボタンが出ない。
+  試すなら `tools/game-mrb/hello_game.mrb`（「hello game」を表示し続けるだけ）を `sim/games/link_pong.mrb` に写す
+- 偽の基板での確認（`tools/browser-check/lib-update-check.cjs`）は、`hello_game.mrb` をこの名前でページに渡し、届いたものを 1 バイトずつ比べる

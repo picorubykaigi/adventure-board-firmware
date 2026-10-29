@@ -9,9 +9,9 @@
 //      left over, the .mrb and the firmware's stamp go, the board restarts
 //   5. ".mrb にして実機で実行" / "実機の app.mrb にする": the code goes over compiled,
 //      and "app.rb にする" / "app.rb を空にする" take an app.mrb away
-//   6. "対戦ゲームを実機の app.mrb にする": examples/game.mrb goes over as it is, whole
+//   6. "対戦ゲームを実機の app.mrb にする": sim/games/link_pong.mrb goes over as it is, whole
 //      (a .mrb has zero bytes, which the bridge to JS would cut a string at). The page is
-//      handed tools/game-mrb/hello_game.mrb as examples/game.mrb, whether or not the game is there
+//      handed tools/game-mrb/hello_game.mrb as games/link_pong.mrb, whether or not the game is there
 // The fake shell throws away what comes in while it waits for the terminal
 // to say where the cursor is, as the real one does; no byte may be lost.
 //
@@ -70,16 +70,16 @@ async function waitStatus(page, text, ms) {
   for (const scenario of ['update', 'disk full', 'reset', 'mrb', 'game']) {
     const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
     const log = [];
-    // examples/game.mrb is looked for when the page opens; its 404 until the
+    // games/link_pong.mrb is looked for when the page opens; its 404 until the
     // game has been committed is not a fault (the game scenario hands one in).
     page.on('console', (m) => {
-      if ((m.location().url || '').endsWith('/examples/game.mrb')) return;
+      if ((m.location().url || '').endsWith('/games/link_pong.mrb')) return;
       log.push(`[${m.type()}] ${m.text()}`);
     });
     page.on('pageerror', (e) => log.push(`[pageerror] ${e.message}`));
     await page.addInitScript(FAKE_SERIAL);
     if (scenario === 'game') {
-      await page.route('**/examples/game.mrb', (route) => route.fulfill({
+      await page.route('**/games/link_pong.mrb', (route) => route.fulfill({
         status: 200, contentType: 'application/octet-stream', body: fs.readFileSync(GAME_MRB) }));
     }
     await page.goto('http://127.0.0.1:8098/sim/');
@@ -101,7 +101,7 @@ async function waitStatus(page, text, ms) {
       check('game: reports', await waitStatus(page, '/home/app.mrb に書いて実行しています', 30000));
       const sent = await page.evaluate(() => (window.__board.shell.rawHex || {})['/home/app.mrb'] || '');
       const want = fs.readFileSync(GAME_MRB).toString('hex');
-      check(`game: /home/app.mrb is examples/game.mrb byte for byte (${sent.length / 2} of ${want.length / 2} bytes)`, sent === want);
+      check(`game: /home/app.mrb is the .mrb byte for byte (${sent.length / 2} of ${want.length / 2} bytes)`, sent === want);
     }
 
     if (scenario === 'mrb') {

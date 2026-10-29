@@ -340,7 +340,7 @@ class SimApp < Funicular::Component
                   end
                 end
                 div(class: "legend") do
-                  "［対戦ゲームを実機の app.mrb にする］ライブラリごとコンパイル済みの対戦ゲーム（examples/#{GAME_MRB}）を " \
+                  "［対戦ゲームを実機の app.mrb にする］ライブラリごとコンパイル済みの対戦ゲーム（#{GAME_MRB}）を " \
                   "#{DeviceLink::APP_MRB_PATH} に書き、電源を入れるたびに動くようにします。" \
                   "やめるときは［実機の app.rb にする］か［実機の app.rb を空にする］を押します。"
                 end
@@ -739,12 +739,13 @@ class SimApp < Funicular::Component
 
   # The two-board game, built elsewhere into one .mrb with the library parts
   # it uses: neither `require` nor compiling happens on the board, which has
-  # not the memory for either with a program that size. Published beside
-  # the samples when there is one (examples/game.mrb).
-  GAME_MRB = "game.mrb"
+  # not the memory for either with a program that size. In the console's own
+  # directory (sim/games/), so it is published with the page; the button is
+  # there only when the file is.
+  GAME_MRB = "games/link_pong.mrb"
 
   def game_mrb_url
-    "#{JS.global[:REPO_ROOT].to_s}examples/#{GAME_MRB}"
+    GAME_MRB
   end
 
   # Read once, when the page is up: the button shows only if it is there, and
@@ -787,15 +788,15 @@ class SimApp < Funicular::Component
   # before it is sent; this page's compiler is the board's (see compiled_code).
   def game_binary
     hex = @game_hex.to_s
-    raise "examples/#{GAME_MRB} を読めませんでした" if hex.empty?
+    raise "#{GAME_MRB} を読めませんでした" if hex.empty?
     binary = SimApp.bytes_of_hex(hex)
     unless binary.bytesize * 2 == hex.size
-      raise "examples/#{GAME_MRB} を正しく読めませんでした（#{binary.bytesize} / #{hex.size / 2} バイト）"
+      raise "#{GAME_MRB} を正しく読めませんでした（#{binary.bytesize} / #{hex.size / 2} バイト）"
     end
     want = PicoRubyVM::InstructionSequence.compile("nil").to_binary.byteslice(0, 8)
     got = binary.byteslice(0, 8)
     unless got == want
-      raise "examples/#{GAME_MRB} は、この実機のファームウェアでは読めない形式です（#{got.inspect}、要るのは #{want.inspect}）"
+      raise "#{GAME_MRB} は、この実機のファームウェアでは読めない形式です（#{got.inspect}、要るのは #{want.inspect}）"
     end
     binary
   end

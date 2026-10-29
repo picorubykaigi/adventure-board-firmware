@@ -278,9 +278,9 @@ async function main() {
   page.on('console', (m) => {
     const line = `[${m.type()}] ${m.text()}`;
     messages.push(line);
-    // examples/game.mrb is looked for when the page opens and is there only
+    // games/link_pong.mrb is looked for when the page opens and is there only
     // once the game has been committed; its 404 until then is not a fault.
-    const missingGame = (m.location().url || '').endsWith('/examples/game.mrb');
+    const missingGame = (m.location().url || '').endsWith('/games/link_pong.mrb');
     if (m.type() === 'error' && !missingGame) errors.push(line);
   });
   page.on('pageerror', (e) => errors.push(`[pageerror] ${e.message}`));
