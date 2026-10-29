@@ -181,6 +181,10 @@ rake sim:board_art          # 基板の絵と位置の表を .kicad_pcb から�
   Array や Hash を渡すと `TypeError`。interop ドキュメントの型対応表は `[]=` の話。
   `JS::Bridge.to_js` は使えるが要素ごとに push するので呼び出し回数が増える
 - ブリッジは文字列を C 文字列として扱うので、**NUL を含むバイト列は途中で切れる**
+- **`Base16.decode16` は 0 のバイトを捨てる**（1 バイトずつ `mrb_str_cat_cstr` で足すので、0 は何も足さない）。16 進で受けたバイト列は
+  `SimApp.bytes_of_hex` で戻す。2026-10-30 に `game.mrb` を `decode16` で戻して送ったら、0 の抜けた `.mrb` が `app.mrb` になり、
+  実機が起動のたびに落ちて再起動をくり返した（起動中に `s` で `/etc/init.d/r2p2` を飛ばして戻せた）。先頭の `RITE0400` には 0 が無いので形式の確認も通り、
+  CRC も壊れたもの同士で一致した。**バイナリを送ったら、届いたものを元と丸ごと比べる**（`lib-update-check.cjs` は偽の基板の `rawHex` と比べる）
 - **存在しない JS 関数を呼んでも例外にならない。** console に
   `Method not found or not a function: ...` が出るだけなので、静かに失敗する
 - **`JS.global.fetch` は `.then` ではなくブロックを取る。** Promise 一般は `.await` / `.then`

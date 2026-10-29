@@ -88,8 +88,9 @@ async function waitStatus(page, text, ms) {
       await page.waitForSelector('#device-install-game', { timeout: 10000 });
       await page.click('#device-install-game');
       check('game: reports', await waitStatus(page, '/home/app.mrb に書いて実行しています', 30000));
-      const g = (await board())['/home/app.mrb'] || '';
-      check('game: /home/app.mrb is the .mrb, not cut at its first zero byte', g.startsWith('RITE0400') && g.includes('hello game'));
+      const sent = await page.evaluate(() => (window.__board.shell.rawHex || {})['/home/app.mrb'] || '');
+      const want = require('fs').readFileSync(require('path').join(ROOT, 'examples', 'game.mrb')).toString('hex');
+      check(`game: /home/app.mrb is examples/game.mrb byte for byte (${sent.length / 2} of ${want.length / 2} bytes)`, sent === want);
     }
 
     if (scenario === 'mrb') {

@@ -142,6 +142,8 @@ const FAKE_SERIAL = () => {
             const crc = window.__crc32(this.file.data);
             this.reply(0x8f, [0, (crc >>> 24) & 0xff, (crc >>> 16) & 0xff, (crc >>> 8) & 0xff, crc & 0xff]);
             this.files[this.file.path] = dec.decode(new Uint8Array(this.file.data));
+            // The bytes as they came, for a check that a binary file arrived whole.
+            (this.rawHex = this.rawHex || {})[this.file.path] = this.file.data.map((b) => (b < 16 ? '0' : '') + b.toString(16)).join('');
             this.modem = null;
             this.emit('[PicoModem] write ' + this.file.path + '\r\n' + REDRAW);   // as the shell prints on the way back
           }

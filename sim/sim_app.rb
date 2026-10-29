@@ -763,6 +763,20 @@ class SimApp < Funicular::Component
     nil
   end
 
+  # Not Base16.decode16: it appends each byte with mrb_str_cat_cstr, which
+  # appends nothing for a zero byte, and a .mrb missing its zero bytes is not
+  # one (a board that ran it as app.mrb restarted over and over).
+  def self.bytes_of_hex(hex)
+    out = ""
+    i = 0
+    n = hex.size
+    while i < n
+      out << hex[i, 2].to_i(16).chr
+      i += 2
+    end
+    out
+  end
+
   def game_mrb_found(hex)
     @game_hex = hex
     patch(game_mrb: true)
@@ -772,8 +786,12 @@ class SimApp < Funicular::Component
   # A .mrb made by a compiler other than the one the board runs is refused
   # before it is sent; this page's compiler is the board's (see compiled_code).
   def game_binary
-    raise "examples/#{GAME_MRB} を読めませんでした" if @game_hex.to_s.empty?
-    binary = Base16.decode16(@game_hex)
+    hex = @game_hex.to_s
+    raise "examples/#{GAME_MRB} を読めませんでした" if hex.empty?
+    binary = SimApp.bytes_of_hex(hex)
+    unless binary.bytesize * 2 == hex.size
+      raise "examples/#{GAME_MRB} を正しく読めませんでした（#{binary.bytesize} / #{hex.size / 2} バイト）"
+    end
     want = PicoRubyVM::InstructionSequence.compile("nil").to_binary.byteslice(0, 8)
     got = binary.byteslice(0, 8)
     unless got == want
