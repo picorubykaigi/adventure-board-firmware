@@ -82,8 +82,15 @@
   /* The code and the board's terminal, side by side where both fit at 380px
      or more, one above the other where they do not. Same height, so that
      they line up. */
-  .work { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; margin-top: 12px; }
+  .work { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; margin-top: 12px;
+          container-type: inline-size; }
   .code-pane, .term-pane { flex: 1 1 380px; min-width: 0; }
+  /* Side by side (two 380px panes and the gap), they reach down about as far
+     as the board's picture beside them. Stacked, two boxes that tall would
+     be a long way to scroll, so they stay at 320px. */
+  @container (min-width: 776px) {
+    .work .editor textarea, .work #devicelog { height: 500px; }
+  }
   .pane-title { color: var(--dim); font-size: 13px; margin: 0 0 4px; }
   .editor { position: relative; }
   .editor textarea { display: block; position: relative; white-space: pre; overflow: auto; }
