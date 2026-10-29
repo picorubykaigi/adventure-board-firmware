@@ -41,6 +41,13 @@
   /* The title sits between the two rails, as the site's navigation does;
      everything else starts below the blue one (at 76-80px). */
   h1 { font: 34px/1.1 "Jersey 10", "DotGothic16", sans-serif; letter-spacing: .06em; margin: 0; color: var(--red); }
+  /* The bar between the rails: the title, and on its right what belongs to
+     the page rather than to the simulator or a board. */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+  .topbar-tools { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; font-size: 13px; }
+  .topbar-tools a { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .topbar-tools a:hover { text-decoration: underline; }
+  .topbar-tools select { padding: 2px 8px; font-size: 13px; }
   p.sub { margin: 26px 0 16px; color: var(--dim); font-size: 14px; }
   .wrap { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
   .panel-side { flex: 0 0 auto; }
@@ -62,7 +69,7 @@
   button.primary { background: var(--red); border-color: var(--redd); color: #fff; font-weight: 600; }
   button:disabled { opacity: .5; cursor: not-allowed; }
   textarea {
-    width: 100%; box-sizing: border-box; height: 300px; resize: vertical;
+    width: 100%; box-sizing: border-box; height: 320px; resize: vertical;
     font: var(--code-font)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
     background: var(--card); color: var(--ink); border: 1px solid var(--line-strong);
     border-radius: 6px; padding: 10px;
@@ -72,9 +79,12 @@
      colours to show (class "colored", set from setCodeColors). Without them
      -- a PicoRuby.wasm that has no SyntaxHighlight -- it stays an ordinary
      textarea. Lines do not wrap, so that both lay the text out alike. */
-  .editor-bar { display: flex; justify-content: flex-end; align-items: center; gap: 6px;
-                margin: 0 0 6px; font-size: 13px; }
-  .editor-bar select { padding: 2px 8px; font-size: 13px; }
+  /* The code and the board's terminal, side by side where both fit at 380px
+     or more, one above the other where they do not. Same height, so that
+     they line up. */
+  .work { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; margin-top: 12px; }
+  .code-pane, .term-pane { flex: 1 1 380px; min-width: 0; }
+  .pane-title { color: var(--dim); font-size: 13px; margin: 0 0 4px; }
   .editor { position: relative; }
   .editor textarea { display: block; position: relative; white-space: pre; overflow: auto; }
   #code-colors {
@@ -118,7 +128,7 @@
   /* The board's shell: an xterm.js terminal. Dragging the bottom edge
      resizes it, and the terminal refits itself (see deviceTerminal). */
   #devicelog {
-    margin: 4px 0 0; padding: 6px; height: 240px; min-height: 80px; resize: vertical; overflow: hidden;
+    margin: 0; padding: 6px; box-sizing: border-box; height: 320px; min-height: 80px; resize: vertical; overflow: hidden;
     background: var(--well); border: 2px solid #3d3a48; border-radius: 6px;
   }
   #devicelog .xterm { height: 100%; }
@@ -192,7 +202,26 @@ window.queryParam = function (name) { return new URLSearchParams(location.search
 </head>
 <body>
 
-<h1>Adventure Board Console</h1>
+<header class="topbar">
+  <h1>Adventure Board Console</h1>
+  <div class="topbar-tools">
+    <a href="https://picorubykaigi.org/adventure-board/" target="_blank" rel="noopener">ドキュメントへ</a>
+    <span><label for="font-size">文字の大きさ</label>
+      <select id="font-size">
+        <option value="small">小</option>
+        <option value="medium">中</option>
+        <option value="large">大</option>
+      </select></span>
+  </div>
+</header>
+<script>
+// The size of the text (setCodeFont above), picked here.
+(function () {
+  const select = document.getElementById('font-size');
+  select.value = window.codeFontName();
+  select.addEventListener('change', function () { window.setCodeFont(select.value); });
+})();
+</script>
 <p class="sub">
   PicoRubyKaigi 2026 Assemble のオリジナル基板（Adventure Board）のシミュレータ兼開発環境です。
 </p>

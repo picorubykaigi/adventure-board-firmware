@@ -234,25 +234,28 @@ class SimApp < Funicular::Component
           span(class: "group-title") { "実機（USBシリアル接続）" }
           div(class: "controls") { device_controls }
         end
-        # A setting of the page, not of the simulator or the board: above
-        # the code box it changes, outside both groups.
-        div(class: "editor-bar") do
-          label(for: "font-size") { "文字の大きさ" }
-          select(id: "font-size", onchange: :on_font_size) { font_options }
-        end
-        div(class: "editor") do
-          tag("pre", id: "code-colors") { "" }
-          textarea(ref: :codebox, id: "code", spellcheck: "false")
-        end
-        div(id: "status", class: state[:kind]) { state[:status] }
-        # The board's shell. There from the start (xterm.js has to open into
-        # a box that has a size) wherever the browser can do WebSerial.
-        # Not `hidden: nil`: on the first render Funicular writes a nil
-        # attribute as hidden="" (only its own list of boolean attributes is
-        # treated as such), and the box would start out hidden.
-        if state[:device_supported]
-          div(class: "legend", style: "margin-top:12px") { "実機端末(xterm)" }
-          div(id: "devicelog")
+        # The code and the board's terminal, side by side where there is room
+        # (index.html's .work). The text size is picked in the page's top bar.
+        div(class: "work") do
+          div(class: "code-pane") do
+            div(class: "pane-title") { "コード" }
+            div(class: "editor") do
+              tag("pre", id: "code-colors") { "" }
+              textarea(ref: :codebox, id: "code", spellcheck: "false")
+            end
+            div(id: "status", class: state[:kind]) { state[:status] }
+          end
+          # The board's shell. There from the start (xterm.js has to open into
+          # a box that has a size) wherever the browser can do WebSerial.
+          # Not `hidden: nil`: on the first render Funicular writes a nil
+          # attribute as hidden="" (only its own list of boolean attributes is
+          # treated as such), and the box would start out hidden.
+          if state[:device_supported]
+            div(class: "term-pane") do
+              div(class: "pane-title") { "実機端末(xterm)" }
+              div(id: "devicelog")
+            end
+          end
         end
         # Read-only: the library a program calls into. Shown on request, and
         # kept in instance variables like the board picture's (BoardView).
@@ -382,26 +385,6 @@ class SimApp < Funicular::Component
       option(value: list[i], selected: list[i] == @lib_file ? "selected" : nil) { "lib/#{list[i]}" }
       i += 1
     end
-    nil
-  end
-
-  FONT_SIZES = [["small", "小"], ["medium", "中"], ["large", "大"]]
-
-  # The size lives in the page's JS (and its storage); read back here so the
-  # list shows it.
-  def font_options
-    current = JS.global.codeFontName.to_s
-    list = FONT_SIZES
-    i = 0
-    while i < list.size
-      option(value: list[i][0], selected: list[i][0] == current ? "selected" : nil) { list[i][1] }
-      i += 1
-    end
-    nil
-  end
-
-  def on_font_size(event)
-    JS.global.setCodeFont(event.target[:value].to_s)
     nil
   end
 
