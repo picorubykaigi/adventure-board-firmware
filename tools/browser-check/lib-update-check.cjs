@@ -9,6 +9,8 @@
 //      left over, the .mrb and the firmware's stamp go, the board restarts
 //   5. ".mrb にして実機で実行" / "実機の app.mrb にする": the code goes over compiled,
 //      and "app.rb にする" / "app.rb を空にする" take an app.mrb away
+//   6. "対戦ゲームを実機の app.mrb にする": examples/game.mrb goes over as it is, whole
+//      (a .mrb has zero bytes, which the bridge to JS would cut a string at)
 // The fake shell throws away what comes in while it waits for the terminal
 // to say where the cursor is, as the real one does; no byte may be lost.
 //
@@ -63,7 +65,7 @@ async function waitStatus(page, text, ms) {
   let failed = false;
   const check = (label, ok) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}`); if (!ok) failed = true; };
 
-  for (const scenario of ['update', 'disk full', 'reset', 'mrb']) {
+  for (const scenario of ['update', 'disk full', 'reset', 'mrb', 'game']) {
     const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
     const log = [];
     page.on('console', (m) => log.push(`[${m.type()}] ${m.text()}`));
@@ -81,6 +83,14 @@ async function waitStatus(page, text, ms) {
     await page.click('#advanced-toggle');   // both buttons are in the advanced part at the bottom
     await page.waitForSelector('#device-reset-lib');
     check('the advanced part names the version', (await page.textContent('#device-advanced')).includes(`${VERSION} 版`));
+
+    if (scenario === 'game') {
+      await page.waitForSelector('#device-install-game', { timeout: 10000 });
+      await page.click('#device-install-game');
+      check('game: reports', await waitStatus(page, '/home/app.mrb に書いて実行しています', 30000));
+      const g = (await board())['/home/app.mrb'] || '';
+      check('game: /home/app.mrb is the .mrb, not cut at its first zero byte', g.startsWith('RITE0400') && g.includes('hello game'));
+    }
 
     if (scenario === 'mrb') {
       const ran = () => page.evaluate(() => window.__board.shell.ran.join(' '));

@@ -189,6 +189,7 @@ class SimApp < Funicular::Component
     draw
     patch(status: "準備できました。", kind: "ok")
     load_example(initial_example)
+    look_for_game_mrb
     nil
   end
 
@@ -329,6 +330,20 @@ class SimApp < Funicular::Component
               end
               div(class: "legend") do
                 "どちらも /home 以下のファイルは影響を受けません。"
+              end
+              # Only where the console has been published with one.
+              if state[:game_mrb]
+                div(class: "controls") do
+                  button(id: "device-install-game", onclick: :on_device_install_game,
+                         disabled: (state[:device] == :connected) ? nil : "disabled") do
+                    "対戦ゲームを実機の app.mrb にする"
+                  end
+                end
+                div(class: "legend") do
+                  "［対戦ゲームを実機の app.mrb にする］ライブラリごとコンパイル済みの対戦ゲーム（examples/#{GAME_MRB}）を " \
+                  "#{DeviceLink::APP_MRB_PATH} に書き、電源を入れるたびに動くようにします。" \
+                  "やめるときは［実機の app.rb にする］か［実機の app.rb を空にする］を押します。"
+                end
               end
             end
           end
@@ -722,10 +737,68 @@ class SimApp < Funicular::Component
     nil
   end
 
-  def device_installed_mrb(error)
+  # The two-board game, built elsewhere into one .mrb with the library parts
+  # it uses: neither `require` nor compiling happens on the board, which has
+  # not the memory for either with a program that size. Published beside
+  # the samples when there is one (examples/game.mrb).
+  GAME_MRB = "game.mrb"
+
+  def game_mrb_url
+    "#{JS.global[:REPO_ROOT].to_s}examples/#{GAME_MRB}"
+  end
+
+  # Read once, when the page is up: the button shows only if it is there, and
+  # sends what was read. The bytes come over as hex, because the bridge to JS
+  # passes strings as C strings and would cut a .mrb at its first zero byte.
+  def look_for_game_mrb
+    url = game_mrb_url
+    Task.new(name: "look-for-game-mrb") do
+      begin
+        hex = JS.global.fetchHex(url).await.to_s
+        $app.game_mrb_found(hex) if !hex.empty? && $app
+      rescue Exception
+        nil
+      end
+    end
+    nil
+  end
+
+  def game_mrb_found(hex)
+    @game_hex = hex
+    patch(game_mrb: true)
+    nil
+  end
+
+  # A .mrb made by a compiler other than the one the board runs is refused
+  # before it is sent; this page's compiler is the board's (see compiled_code).
+  def game_binary
+    raise "examples/#{GAME_MRB} を読めませんでした" if @game_hex.to_s.empty?
+    binary = Base16.decode16(@game_hex)
+    want = PicoRubyVM::InstructionSequence.compile("nil").to_binary.byteslice(0, 8)
+    got = binary.byteslice(0, 8)
+    unless got == want
+      raise "examples/#{GAME_MRB} は、この実機のファームウェアでは読めない形式です（#{got.inspect}、要るのは #{want.inspect}）"
+    end
+    binary
+  end
+
+  def on_device_install_game(_event)
+    patch(device: :busy, status: "対戦ゲームを実機の #{DeviceLink::APP_MRB_PATH} に書いています…", kind: "busy")
+    Task.new(name: "device-install-game") do
+      begin
+        $device.install_mrb($app.game_binary)
+        $app.device_installed_mrb(nil, "対戦ゲームを実機の app.mrb にする") if $app
+      rescue Exception => e
+        $app.device_installed_mrb(e, "対戦ゲームを実機の app.mrb にする") if $app
+      end
+    end
+    nil
+  end
+
+  def device_installed_mrb(error, what = "実機の app.mrb にする")
     patch(device: $device.connected? ? :connected : :none)
     if error
-      report("実機の app.mrb にする", error)
+      report(what, error)
     else
       patch(kind: "ok", status: "#{DeviceLink::APP_MRB_PATH} に書いて実行しています。電源を入れるたびにこのプログラムが動きます。")
     end
@@ -1070,7 +1143,8 @@ class SimApp < Funicular::Component
   # The run loop is a class method — it outlives any one render — and it pokes
   # the mounted instance, so these two cannot stay private.
   public :draw, :report, :device_finished, :device_rebooting, :device_installed, :device_cleared,
-         :device_updated_lib, :device_reset_lib, :compiled_code, :device_installed_mrb
+         :device_updated_lib, :device_reset_lib, :compiled_code, :device_installed_mrb,
+         :game_binary, :game_mrb_found
 end
 
 Funicular.start(SimApp, container: 'app')

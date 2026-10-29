@@ -203,6 +203,19 @@ window.REPO_ROOT = '../';
     apply();
   };
 })();
+// A binary file as hex, for the Ruby side: the bridge passes strings as C
+// strings and would cut a .mrb at its first zero byte. '' when the file
+// cannot be fetched.
+window.fetchHex = async function (url) {
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) return '';
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    const parts = new Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) parts[i] = (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16).toUpperCase();
+    return parts.join('');
+  } catch (e) { return ''; }
+};
 // ?name=value of the page's URL, for the Ruby side (null when absent).
 window.queryParam = function (name) { return new URLSearchParams(location.search).get(name); };
 </script>

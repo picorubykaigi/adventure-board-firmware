@@ -45,7 +45,8 @@ namespace :site do
       FileUtils.cp_r "#{MRUBY_ROOT}/sim/#{name}", out
     end
     FileUtils.cp_r ["#{MRUBY_ROOT}/lib/adventure_board.rb", "#{MRUBY_ROOT}/lib/adventure_board"], "#{repo}/lib"
-    FileUtils.cp Dir["#{MRUBY_ROOT}/examples/*.rb"], "#{repo}/examples"
+    # .mrb too: a program built ahead with the library in it (examples/game.mrb).
+    FileUtils.cp Dir["#{MRUBY_ROOT}/examples/*.{rb,mrb}"], "#{repo}/examples"
     # The gems whose Ruby the page loads (the M + '...' entries in index.html).
     File.read("#{MRUBY_ROOT}/sim/index.html").scan(%r{M \+ '([^']+)'}).flatten.each do |path|
       FileUtils.mkdir_p File.dirname("#{repo}/mrbgems/#{path}")
