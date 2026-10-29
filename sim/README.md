@@ -288,6 +288,6 @@ emsdk を入れて自前ビルドすれば通せる。
 - 実機のファームと同じコンパイラで作る（`RITE0400`）。コンソールは、先頭の版がページのコンパイラと違えば送らない
 - 中に入れたライブラリはその時点のもので固まる。`lib/` を直したら作り直す
 - 作り方の例: `docker compose -f docker/compose.yml run --rm shell bash -lc "rake && build/host/bin/mrbc -o sim/games/link_pong.mrb ゲーム.rb"`
-- **まだ置いていない**（別にコミットされる予定）。無いあいだはボタンが出ない。
-  試すなら `tools/game-mrb/hello_game.mrb`（「hello game」を表示し続けるだけ）を `sim/games/link_pong.mrb` に写す
+- **今は仮のもの**（2026-10-30〜）: `tools/game-mrb/hello_game.mrb` と同じ、「hello game」を表示し続けるだけの .mrb。対戦ゲームは別にコミットされる予定。
+  ファイルを消すとボタンも出なくなる
 - 偽の基板での確認（`tools/browser-check/lib-update-check.cjs`）は、`hello_game.mrb` をこの名前でページに渡し、届いたものを 1 バイトずつ比べる
