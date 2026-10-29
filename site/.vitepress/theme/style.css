@@ -196,3 +196,7 @@ body {
   width: 100%;
   margin: 16px auto;
 }
+
+/* The line under the home page's tagline asking for posts on X. */
+.VPHero .tagline .hero-x { display: block; margin-top: 12px; font-size: 15px; line-height: 1.6; }
+.VPHero .tagline .hero-x a { color: var(--vp-c-brand-1); font-weight: 600; }

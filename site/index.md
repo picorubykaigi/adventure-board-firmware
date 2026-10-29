@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Adventure Board
   text: Lチカ、その先の冒険へ
-  tagline: PicoRubyKaigi 2026 Assemble のオリジナル基板です。16×16 の LEDマトリクス、スピーカー、6 つのボタン、ブレッドボードなどが 1 枚に載っています。
+  tagline: 'PicoRubyKaigi 2026 Assemble のオリジナル基板です。16×16 の LEDマトリクス、スピーカー、6 つのボタン、ブレッドボードなどが 1 枚に載っています。<span class="hero-x">感想を X で <a href="https://x.com/intent/post?hashtags=adventure_board" target="_blank" rel="noopener">#adventure_board</a> を付けてつぶやいてもらえるとうれしいです。</span>'
   image:
     src: /images/board.webp
     alt: Adventure Board
@@ -18,6 +18,10 @@ hero:
     - theme: alt
       text: コンソールを開く
       link: /console/
+      target: _blank
+    - theme: alt
+      text: 基板を手に入れる
+      link: https://picopicoruby.connpass.com/event/409302/
       target: _blank
 
 features:
