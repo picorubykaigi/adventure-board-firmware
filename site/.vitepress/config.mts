@@ -64,7 +64,8 @@ export default defineConfig({
             { text: '基板の各部', link: '/guide/board' },
             { text: 'コンソールを使う', link: '/guide/console' },
             { text: 'R2P2のシェル', link: '/guide/shell' },
-            { text: 'ファームウェアの書き込み', link: '/guide/firmware' }
+            { text: 'ファームウェアの書き込み', link: '/guide/firmware' },
+            { text: 'USB MIDI で鳴らす', link: '/guide/usb-midi' }
           ]
         }
       ],
