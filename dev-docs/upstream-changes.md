@@ -267,3 +267,23 @@ RP2040 のボード（pico / pico_w）でも同じ 3.2KB を RAM に取る点は
 | `ports/common/psg.c` | `update_envelope` のループ内の `return` 4 か所を `continue` に（とコメント 3 行） |
 
 問題の記録は [upstream-issues.md](upstream-issues.md) の 7。
+
+## 15. USB MIDI 版のビルド（`R2P2_USB_MIDI`、2026-11-01）
+
+基板を PC から USB MIDI 楽器として鳴らすための**別のビルド**。`R2P2_USB_MIDI=1` を付けたときだけ効き、
+付けないビルドは USB の構成も gem も変わらない。設計と経緯は [usb-midi/README.md](usb-midi/README.md)。
+
+| ファイル | 変更 |
+|---|---|
+| `build_config/r2p2-picoruby-pico2.rb` | `ENV['R2P2_USB_MIDI']` のときビルド名に `-midi` を足し、`picoruby-usb_midi_device`（MIDIBASE のトランスポートにするファイルを足す）・`picoruby-adventure_board-usb_midi`（`UsbMidi` を焼き込む。メモリのため。[usb-midi/README.md](usb-midi/README.md) の「メモリ」）を `conf.gem` |
+| `tasks/picoruby/r2p2.rake` | `r2p2_usb_midi?` / `r2p2_variant` / `r2p2_def_usb_midi`。ビルドディレクトリ・libmruby の名前に `-midi`、cmake に `-D R2P2_USB_MIDI` |
+| `picoruby-r2p2/cmake/CMakeLists.txt` | `option(R2P2_USB_MIDI)`。`R2P2_USB_MIDI` / `USB_MIDI_DEVICE_ENABLED` / `USB_MIDI_DEVICE_OWN_DESCRIPTORS=0`（gem のディスクリプタではなく R2P2 のものを使う）を定義し、`gen_system_files.rb` に `--usb-midi` を渡す |
+| `picoruby-r2p2/include/tusb_config.h` | `R2P2_USB_MIDI` のとき `CFG_TUD_MIDI 1`。MIDI の FIFO を 64 byte ずつ |
+| `picoruby-r2p2/ports/rp2040/usb_descriptors.c` | `CFG_TUD_MIDI` のとき IAD + `TUD_MIDI_DESCRIPTOR`（インターフェース 9・10、EP 0x0A / 0x8A、文字列 10 "PicoRuby MIDI"）。PID を 0x401F に（既存の `_PID_MAP` では HID×3 が MIDI のビットを既に立てていて 0x400F のまま変わらないため） |
+`picoruby-machine` は**変えていない**。TinyUSB を呼んでよいのは USB pump の `tud_task()` の中だけなので、
+最初は pump にフックを足したが、TinyUSB 自身の `usbd_defer_func()`（関数呼び出しを `tud_task()` のキューに積む）で
+代わりが利くので取り下げた。
+
+新規（衝突しない）: `mrbgems/picoruby-usb_midi_device/`（kirikak2 のサブモジュール。MIDoRI と共有。
+RP2 の port を `ports/rp2040/` に、MIDIBASE のトランスポートにするファイルを `mrblib_midibase/` に足した）、`mrbgems/picoruby-adventure_board-usb_midi/`、`lib/adventure_board/usb_midi.rb`、
+`examples/usb_midi/`。

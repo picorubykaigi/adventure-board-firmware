@@ -3,7 +3,10 @@
 # firmware carries, so that a fresh board has them on its filesystem after a
 # single UF2 and nothing has to be transferred over a wire.
 #
-#   ruby tools/gen_system_files.rb <output.c>
+#   ruby tools/gen_system_files.rb [--usb-midi] <output.c>
+#
+# --usb-midi is the USB MIDI firmware (R2P2_USB_MIDI): it carries the samples
+# in examples/usb_midi/ as well, which need that firmware to run.
 #
 # Run from CMake at configure time; the output is git-ignored.
 
@@ -42,6 +45,14 @@ Dir.glob("#{ROOT}/examples/*.rb").sort.each do |path|
   name = File.basename(path)
   MANIFEST << ["examples/#{name}", "/home/examples/#{name}", false]
 end
+USB_MIDI = !ARGV.delete("--usb-midi").nil?
+if USB_MIDI
+  Dir.glob("#{ROOT}/examples/usb_midi/*.rb").sort.each do |path|
+    name = File.basename(path)
+    MANIFEST << ["examples/usb_midi/#{name}", "/home/examples/#{name}", false]
+  end
+end
+
 def c_identifier(destination)
   destination.gsub(/[^A-Za-z0-9]/, "_").sub(/\A_+/, "")
 end

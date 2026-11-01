@@ -116,7 +116,13 @@
 #define CFG_TUD_CDC              3
 #define CFG_TUD_MSC              0
 #define CFG_TUD_HID              3
+// R2P2_USB_MIDI: also a USB MIDI device (cmake -D R2P2_USB_MIDI=ON; the
+// interface is driven by picoruby-usb_midi_device)
+#if defined(R2P2_USB_MIDI)
+#define CFG_TUD_MIDI             1
+#else
 #define CFG_TUD_MIDI             0
+#endif
 #define CFG_TUD_VENDOR           0
 
 // CDC FIFO size of TX and RX
@@ -128,6 +134,10 @@
 
 // HID buffer size
 #define CFG_TUD_HID_EP_BUFSIZE    16
+
+// MIDI FIFO size of TX and RX (16 packets each way)
+#define CFG_TUD_MIDI_RX_BUFSIZE   64
+#define CFG_TUD_MIDI_TX_BUFSIZE   64
 
 #ifdef __cplusplus
  }

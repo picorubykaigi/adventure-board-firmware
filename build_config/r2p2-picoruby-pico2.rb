@@ -1,4 +1,4 @@
-MRuby::CrossBuild.new("r2p2-picoruby-pico2#{ENV['PICORB_DEBUG'] ? '-debug' : ''}") do |conf|
+MRuby::CrossBuild.new("r2p2-picoruby-pico2#{ENV['R2P2_USB_MIDI'] ? '-midi' : ''}#{ENV['PICORB_DEBUG'] ? '-debug' : ''}") do |conf|
 
   ###############################################################
   # You need following tools:
@@ -61,4 +61,20 @@ MRuby::CrossBuild.new("r2p2-picoruby-pico2#{ENV['PICORB_DEBUG'] ? '-debug' : ''}
   conf.gem core: 'picoruby-usb-cdc-midi'
   conf.gem core: 'picoruby-shinonome'
   conf.gem core: 'picoruby-ssd1306'     # I2C OLED (SSD1306 / SSD1315) on the breadboard or GROVE
+
+  # The USB MIDI build (R2P2_USB_MIDI=1): the board is also a class-compliant
+  # USB MIDI device. tasks/picoruby/r2p2.rake puts it in build directories of
+  # its own and turns the MIDI interface on in the USB descriptors.
+  #
+  # USB_MIDI_DEVICE is a picoruby-midibase transport here (getevent /
+  # putevent, like UART::MIDI), so it plays PSG::Synth with no MIDI layer of
+  # its own. UsbMidi (lib/adventure_board/usb_midi.rb) is built in rather than
+  # compiled from /lib on the board, for the heap (dev-docs/usb-midi/).
+  if ENV['R2P2_USB_MIDI']
+    conf.gem core: 'picoruby-usb_midi_device' do |spec|
+      spec.add_dependency 'picoruby-midibase'
+      spec.rbfiles << "#{spec.dir}/mrblib_midibase/usb_midi_device_midibase.rb"
+    end
+    conf.gem core: 'picoruby-adventure_board-usb_midi'
+  end
 end

@@ -67,8 +67,25 @@ def r2p2_def_console_uart
   "-D R2P2_CONSOLE_UART=#{enabled ? 'ON' : 'OFF'}"
 end
 
+# R2P2_USB_MIDI builds the variant that is also a USB MIDI device
+# (picoruby-usb_midi_device on picoruby-midibase, and a MIDI interface in the USB
+# descriptors). It changes the gems in libmruby and the USB PID, so it gets
+# build directories of its own: "-midi" after the board everywhere a build
+# is named (the build_config appends the same suffix).
+def r2p2_usb_midi?
+  ENV.key?("R2P2_USB_MIDI")
+end
+
+def r2p2_variant
+  r2p2_usb_midi? ? "-midi" : ""
+end
+
+def r2p2_def_usb_midi
+  "-D R2P2_USB_MIDI=#{r2p2_usb_midi? ? 'ON' : 'OFF'}"
+end
+
 def r2p2_build_dir(vm, board, mode)
-  "#{MRUBY_ROOT}/build/r2p2/#{vm}/#{board}/#{mode}"
+  "#{MRUBY_ROOT}/build/r2p2/#{vm}/#{board}#{r2p2_variant}/#{mode}"
 end
 
 namespace :r2p2 do
@@ -129,7 +146,7 @@ namespace :r2p2 do
               # PICORB_DEBUG changes the compile flags of the whole
               # library, so debug and prod must not share a build
               # directory (the build_config appends the same suffix).
-              lib_name = "r2p2-#{vm}-#{board}#{mode == 'debug' ? '-debug' : ''}"
+              lib_name = "r2p2-#{vm}-#{board}#{r2p2_variant}#{mode == 'debug' ? '-debug' : ''}"
               mruby_build_path = "#{MRUBY_ROOT}/build/#{lib_name}"
               FileUtils.cd MRUBY_ROOT do
                 sh "MRUBY_CONFIG=#{config} PICORB_BOARD=#{board} #{mode=='debug' ? 'PICORB_DEBUG=1' : ''} rake"
@@ -148,7 +165,8 @@ namespace :r2p2 do
                 #{r2p2_def_psg_mcp4922_dma} \
                 #{r2p2_def_psg_pwm_dma} \
                 #{r2p2_def_no_shared_alloc} \
-                #{r2p2_def_console_uart}
+                #{r2p2_def_console_uart} \
+                #{r2p2_def_usb_midi}
               DEFS
               sh "cmake -S #{R2P2_GEM_DIR}/cmake -B #{dir} #{defs}"
               sh "cmake --build #{dir}"

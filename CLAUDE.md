@@ -34,6 +34,7 @@ rake docker:r2p2:picoruby:pico2_w:debug    # gdb 用 .elf 付き
 rake docker:r2p2:picoruby:pico2_w:clean
 rake docker:shell                          # コンテナ内シェル
 R2P2_CONSOLE_UART=1 rake docker:r2p2:picoruby:pico2:debug   # r1 基板用: シェルを J2 の UART にも出す
+R2P2_USB_MIDI=1 rake docker:r2p2:picoruby:pico2:prod         # USB MIDI 版（→ dist/picoruby-pico2-prod-midi/）
 rake docker:clean                          # イメージと bundle ボリュームを消す
 ```
 
@@ -164,6 +165,14 @@ rake sim:board_art          # 基板の絵と位置の表を .kicad_pcb から�
   `Errno::ENOENT ... build/host/src/version.pi` で落ちた。`rm -rf build/host` で直る。
   **`rake docker:*` の背景実行では `rake aborted!` を必ず grep すること**——
   ログ末尾の `Artifacts copied` が無いのに古い ELF を焼いた
+- **`mrbgems/*/ports/rp2040/*.c` は build_config に関係なく全ビルドでコンパイル・リンクされる**（CMake の glob）。
+  一部のビルドにしか入れない gem の port は define で中身ごと囲む。囲まずに constructor や強いシンボルを置くと、
+  gem の無い libmruby とのリンクで落ちる（picoruby-usb_midi_device は `USB_MIDI_DEVICE_ENABLED`。`R2P2_USB_MIDI` で
+  CMake が定義する）
+- **gem の mrblib は build_config から外せる**: `conf.gem core: 'x' do |spec| spec.rbfiles.delete("#{spec.dir}/mrblib/y.rb") end`。
+  mruby は rbfiles を決めた後にこのブロックを実行する（`lib/mruby/gem.rb` の `build_config_initializer`）。mruby は全 gem の mrblib を
+  起動時に読むので、ヒープの足りない基板ではこれが効く。逆に `spec.rbfiles << ...` で足すこともできる
+  （USB MIDI 版で picoruby-usb_midi_device の `mrblib_midibase/` を足している）
 - **`picoruby-i2c` は posix ポートを持たない。** `spec.add_dependency 'picoruby-i2c'`
   を書くとホストテストのリンクが `I2C_write_timeout_us` 未定義で落ちる。
   ホストでテストする gem では宣言しないこと（`picoruby-adc` が `picoruby-gpio` で同じ判断）
@@ -420,6 +429,11 @@ canvas はハートビートで仮想チップを映すので、コード側か�
 - **GCC の "two or more data types in declaration specifiers" が健全な `bool` を
   指したら、手前の宣言が閉じていない。** 「未知の型」に見えるエラーも同じ。
   同じファイルの別の場所で同じ型が通っているなら、型の問題ではない
+- **IRQ（SDK のタイマー・USB pump）の中で `malloc` / `free` しない。** libc の確保は estalloc に回してあり（`--wrap=malloc`）、
+  そのヒープは VM のもので IRQ から触る前提になっていない
+- **TinyUSB を呼んでよいのは USB pump（`usb_pump_worker()` / `Machine_tud_task()`）の `tud_task()` の中だけ。** 別の USB クラスを
+  VM から動かすなら、リングに積んで TinyUSB の `usbd_defer_func()`（`device/usbd_pvt.h`）で吐く関数を `tud_task()` のキューに積む。
+  picoruby-machine を変えずに済む（picoruby-usb_midi_device の rp2040 port。積むのはスレッドからだけ、キューは 16 件）
 - **Ruby 側の無い gem でも `_gem_init` / `_gem_final` は要る**（リンクで落ちる）。
   `ports/rp2040/*.c` は CMake が自動で拾うので `CMakeLists.txt` は触らなくてよい
 
@@ -472,6 +486,11 @@ canvas はハートビートで仮想チップを映すので、コード側か�
 `tools/`、`docker/`）は追加なので衝突しない。
 `mrbgems/` **自体はサブモジュールではない**（サブモジュールは中の特定 gem だけ）。
 
+- **USB MIDI 版のビルド**（`R2P2_USB_MIDI=1`、2026-11-01）— `build_config/r2p2-picoruby-pico2.rb` の gem 2 つ、
+  `tasks/picoruby/r2p2.rake` の `-midi` の付いたビルドディレクトリ、`picoruby-r2p2` の CMake オプション・`tusb_config.h`・
+  `usb_descriptors.c`（MIDI 機能、PID 0x401F）。picoruby-machine は変えていない。
+  `R2P2_USB_MIDI` を付けないビルドは何も変わらない
+
 ⚠️ `tasks/picoruby/r2p2.rake` は `%w[pico pico_w pico2 pico2_w]` を決め打ちで
 ループしてタスクを生成する。独自ボード名を足すにはここに手を入れる必要がある（未対応）。
 
@@ -485,6 +504,7 @@ canvas はハートビートで仮想チップを映すので、コード側か�
 | [dev-docs/wasm-simulator/](dev-docs/wasm-simulator/) | ブラウザシミュレータの計画と完了レポート |
 | [dev-docs/device-bringup/](dev-docs/device-bringup/) | 実機で踏んだ穴。**Debug Probe だけで触る手順書**、WSL からの書き込み、`require` の費用 |
 | [dev-docs/grove-link/](dev-docs/grove-link/) | 基板 2 枚を GROVE-B で繋ぐ。PIO で UART を作る |
+| [dev-docs/usb-midi/](dev-docs/usb-midi/README.md) | USB MIDI 版のファーム（`R2P2_USB_MIDI`）。picoruby-usb_midi_device の RP2 port（`usbd_defer_func`）と MIDIBASE 対応 |
 | [docker/README.md](docker/README.md) | ビルド環境の詳細 |
 | [sim/README.md](sim/README.md) | シミュレータの使い方 |
 | [site/README.md](site/README.md) | 使い方とチュートリアルのサイト（VitePress）。`rake site:dev` / `site:build` / `site:preview` |
@@ -550,5 +570,9 @@ canvas はハートビートで仮想チップを映すので、コード側か�
   電源 3.3V、黒 = GND、PIO UART で 0〜255 の折り返し。スクリプトは [dev-docs/device-bringup/scripts/grove2_check.rb](dev-docs/device-bringup/scripts/grove2_check.rb)
 - ✅ 量産版 V1 が届いた（2026-10-19）。1 枚に prod（`66e32805`）を USB（UF2）で焼き、LED マトリクスとスピーカーが動くことを確認。
   ボタン・GROVE などは未確認（回路は PV1 と同じ）
+- ⬜ **USB MIDI 版のファーム**（`R2P2_USB_MIDI=1`、2026-11-01）。PC から USB MIDI で送った音をスピーカーで鳴らす
+  （`AdventureBoard.usb_midi`、`examples/usb_midi/usb_midi_synth.rb`）。picoruby-midi を使った版は V1 で鳴った（メモリ不足を直したあと）。
+  その後 picoruby-midi をやめ、`USB_MIDI_DEVICE` を MIDIBASE のトランスポートにした（looper も戻した）。**MIDIBASE 版は実機未確認**。
+  [dev-docs/usb-midi/](dev-docs/usb-midi/README.md)
 - ⬜ 基板用 build_config（`tasks/picoruby/r2p2.rake` の
   ボード名ループに手を入れる必要がある）

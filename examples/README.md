@@ -13,6 +13,13 @@
 | [envelope.rb](envelope.rb) | PSG のエンベロープ（MML の `s` / `m`）。減衰・トレモロ・和音を順に鳴らす | 基板 1 枚。シミュレータの音源には無い機能 |
 | [oled.rb](oled.rb) | I2C の OLED（SSD1306 / SSD1315、128×64）に文字を出し、ボールを跳ねさせる。`picoruby-ssd1306` | OLED 1 枚。ブレッドボードで J1 の 02（SDA、GPIO2）/ 03（SCL、GPIO3）/ 3V3 / G につなぐ |
 
+[usb_midi/](usb_midi/) のサンプルは **USB MIDI 版のファームウェア**（`R2P2_USB_MIDI=1` のビルド）でだけ動き、
+そのファームにだけ `/home/examples/` に入る。シミュレータの一覧には出さない。
+
+| ファイル | 使うもの | 必要なもの |
+|---|---|---|
+| [usb_midi/usb_midi_synth.rb](usb_midi/usb_midi_synth.rb) | PC から USB MIDI で送った音をスピーカーで鳴らし、LED に出す（`AdventureBoard.usb_midi`）。上下左右のボタンで ch1 の C・D・E・F を PC へ送る（`putevent`） | USB MIDI 版のファームと、MIDI を送る PC（DAW など） |
+
 ハードウェア UART で 2 枚を繋ぐ `grove_uart_chat.rb`（クロスケーブルが要る）もあったが、2026-10-25 に消した。
 配布物にクロスケーブルが無く、一覧に「2 枚をつなぐ」が 2 つ並ぶと迷うため。
 

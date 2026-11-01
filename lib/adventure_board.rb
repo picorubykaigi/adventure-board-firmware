@@ -49,7 +49,7 @@ module AdventureBoard
   # The date of this library. Raised whenever anything under lib/ changes:
   # the console shows it when it writes the library to a board. The library
   # the first firmware (v2026.10.25) wrote has no VERSION.
-  VERSION = "2026.10.28"
+  VERSION = "2026.11.01"
 
   # The Board itself, for what is not below: its pins, and how it was built.
   def self.board
@@ -84,6 +84,16 @@ module AdventureBoard
   def self.grove_link(role: :a, baudrate: nil)
     use(:GroveLink, 'adventure_board/grove_link')
     baudrate ? board.grove_link(role: role, baudrate: baudrate) : board.grove_link(role: role)
+  end
+
+  # The board as a USB MIDI instrument, played on the speaker. Only the USB
+  # MIDI firmware has it (the ordinary one has no MIDI interface on its USB).
+  def self.usb_midi
+    unless Object.const_defined?(:USB_MIDI_DEVICE) && USB_MIDI_DEVICE.method_defined?(:getevent)
+      raise "USB MIDI needs the USB MIDI firmware (adventure-board-*-midi.uf2)"
+    end
+    use(:UsbMidi, 'adventure_board/usb_midi')
+    @usb_midi ||= UsbMidi.new(speaker: speaker)
   end
 
   # GROVE-A (J4), the I2C one.
