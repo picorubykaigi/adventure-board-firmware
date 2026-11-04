@@ -17,21 +17,15 @@ module DotArtEditor
   CELL_EDGE_PX = 3
   CELL_PX = 28
 
+  def self.blank
+    Array.new(HEIGHT) { Array.new(WIDTH, 0) }
+  end
+
   def self.text(levels)
-    out = "[\n"
-    y = 0
-    while y < HEIGHT
-      out << '  "'
-      x = 0
-      while x < WIDTH
-        level = levels[y * WIDTH + x]
-        out << (level == 0 ? '.' : level.to_s)
-        x += 1
-      end
-      out << (y == HEIGHT - 1 ? "\"\n" : "\",\n")
-      y += 1
+    lines = levels.map do |row|
+      '  "' + row.map { |level| level == 0 ? '.' : level.to_s }.join + '"'
     end
-    out << ']'
+    "[\n#{lines.join(",\n")}\n]"
   end
 
   # 1-based, like LedMatrix#set; 0 or 17 on the canvas's edge.
@@ -108,7 +102,7 @@ module DotArtEditor
     if @dot_art_editor_on
       SimApp.stop_task
       AdventureBoard.speaker.stop
-      @dot_levels ||= Array.new(WIDTH * HEIGHT, 0)
+      @dot_levels ||= DotArtEditor.blank
       @dot_pen ||= BRIGHTEST
       show_dot_art
       @dot_art_editor_text_stale = true
@@ -117,18 +111,48 @@ module DotArtEditor
     nil
   end
 
-  def on_dot_art_editor_click(event)
+  # Paints the dot pressed, and keeps its level for the rest of the stroke.
+  def on_dot_art_editor_press(event)
+    event.preventDefault
+    @stroke_level = nil
+    dot = pointed_dot(event)
+    return nil unless dot
+
+    x, y = dot
+    @stroke_level = @dot_levels[y - 1][x - 1] == @dot_pen ? 0 : @dot_pen  # toggle
+    paint_dot(x, y, @stroke_level)
+  end
+
+  # Paints the dot under the pointer with the stroke's level.
+  # The left button is checked on each mousemove, not by waiting for mouseup,
+  # because mouseup never comes here when released outside the canvas.
+  def on_dot_art_editor_drag(event)
+    return nil if @stroke_level.nil? || (event[:buttons].to_i & 1) == 0
+
+    dot = pointed_dot(event)
+    return nil unless dot
+
+    x, y = dot
+    paint_dot(x, y, @stroke_level)
+  end
+
+  # [x, y], 1-based like LedMatrix#set.
+  def pointed_dot(event)
     scale = BoardView::PANEL_PX / event.target[:clientWidth].to_f
     x = DotArtEditor.dot_at(event[:offsetX].to_f * scale)
     y = DotArtEditor.dot_at(event[:offsetY].to_f * scale)
-    # A click on the canvas's edge, outside the 16 x 16 dots.
-    return nil if x < 1 || WIDTH < x || y < 1 || HEIGHT < y
-    i = (y - 1) * WIDTH + (x - 1)
-    @dot_levels[i] = if @dot_levels[i] == @dot_pen
-      0
+    if (1..WIDTH).include?(x) && (1..HEIGHT).include?(y)
+      [x, y]
     else
-      @dot_pen
+      nil
     end
+  end
+
+  def paint_dot(x, y, level)
+    row = @dot_levels[y - 1]
+    return nil if row[x - 1] == level
+
+    row[x - 1] = level
     show_dot_art
     @dot_art_editor_text_stale = true
     if @dot_art_editor_copied
@@ -145,7 +169,7 @@ module DotArtEditor
   end
 
   def on_dot_art_editor_clear(_event)
-    @dot_levels = Array.new(WIDTH * HEIGHT, 0)
+    @dot_levels = DotArtEditor.blank
     show_dot_art
     @dot_art_editor_text_stale = true
     @dot_art_editor_copied = false
@@ -163,11 +187,10 @@ module DotArtEditor
   def show_dot_art
     matrix = AdventureBoard.matrix
     matrix.clear
-    i = 0
-    while i < @dot_levels.size
-      level = @dot_levels[i]
-      matrix.set(i % WIDTH + 1, i / WIDTH + 1, DotArtEditor.brightness(level)) unless level == 0
-      i += 1
+    @dot_levels.each_with_index do |row, y|
+      row.each_with_index do |level, x|
+        matrix.set(x + 1, y + 1, DotArtEditor.brightness(level)) unless level == 0
+      end
     end
     matrix.show
   end

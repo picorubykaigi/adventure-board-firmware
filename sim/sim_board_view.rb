@@ -109,7 +109,8 @@ module BoardView
         parts_layer
         canvas(ref: :panel, id: "panel", width: PANEL_PX.to_s, height: PANEL_PX.to_s,
                style: BoardView.box_style(PANEL_LEFT, PANEL_TOP, PANEL_MM, PANEL_MM),
-               onclick: :on_zoom_matrix)
+               onclick: :on_zoom_matrix, onmousedown: :on_matrix_press,
+               onmousemove: :on_matrix_drag)
       end
     end
     breadboard_tools if zoom == :breadboard
@@ -283,12 +284,16 @@ module BoardView
     set_zoom(event.target.getAttribute('data-zoom').to_s)
   end
 
-  def on_zoom_matrix(event)
-    if view_zoom != :matrix
-      set_zoom("matrix")
-    elsif @dot_art_editor_on
-      on_dot_art_editor_click(event)
-    end
+  def on_zoom_matrix(_event)
+    set_zoom("matrix") unless view_zoom == :matrix
+  end
+
+  def on_matrix_press(event)
+    on_dot_art_editor_press(event) if view_zoom == :matrix && @dot_art_editor_on
+  end
+
+  def on_matrix_drag(event)
+    on_dot_art_editor_drag(event) if view_zoom == :matrix && @dot_art_editor_on
   end
 
   def on_zoom_breadboard(_event)
