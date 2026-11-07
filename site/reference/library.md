@@ -101,6 +101,12 @@ USB の近くの緑の LED を操作します。
 | `AdventureBoard.grove_uart(baudrate: 115200)` | GROVE2 の `UART`（TX = GPIO28、RX = GPIO29） |
 | `AdventureBoard.grove_link(role: :a)` | GROVE2 で同じ基板どうしをつなぎます。2 枚で `:a` と `:b` に分けます。ケーブルは、赤（電源）の線だけを切った Grove ケーブルを使ってください |
 
+::: warning 今のファームウェア（2026.10.25 版）では grove_uart が使えません
+この版は UART0 を R2P2 のシェル用に使っているので、`grove_uart`（や `UART.new(unit: :RP2040_UART0, ...)`）を呼ぶと基板が再起動します。
+代わりに、下の「[GROVE2 の UART を PIO で使う](#grove-pio-uart)」の書き方を使ってください。
+次の版のファームウェア（準備中）で、`grove_uart` も使えるようになる予定です。
+:::
+
 `grove_i2c` と `grove_uart` が返すのは、PicoRuby の [`I2C`](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-i2c) と [`UART`](https://github.com/picoruby/picoruby/tree/master/mrbgems/picoruby-uart) のオブジェクトそのものです。
 ピンの番号を指定しなくてよいだけで、使えるメソッドは PicoRuby と同じなので、くわしくはリンク先の説明（英語）を見てください。
 
@@ -112,6 +118,36 @@ data = i2c.read(0x5F, 1)         # アドレス 0x5F から 1 バイト読む
 ```
 
 `grove_link` の使い方は、サンプルの一覧の「実機専用」にある「基板 2 枚をつなぐ」を見てください。
+
+### GROVE2 の UART を PIO で使う {#grove-pio-uart}
+
+今のファームウェア（2026.10.25 版）で GROVE2 の UART を使うときは、`UART.new` に `unit: :PIO_UART0` を渡します。
+ハードウェアの UART の代わりに、PIO（RP2350 のプログラムできる入出力）で UART を作ります。
+返ってくるのはふつうの `UART` なので、`write` / `read` / `gets` / `bytes_available` などはそのまま使えます。
+
+```ruby
+uart = UART.new(
+  unit: :PIO_UART0,   # ハードウェアの UART0 の代わりに PIO を使う
+  txd_pin: 28,        # 送信
+  rxd_pin: 29,        # 受信
+  baudrate: 115200
+)
+
+uart.write("hello\r\n")   # 相手に送る
+
+while true
+  n = uart.bytes_available
+  if n > 0
+    print uart.read(n)    # 届いた分だけ読んで表示する
+  end
+  sleep_ms 10
+end
+```
+
+- 形式は **8N1（データ 8 ビット、パリティなし、ストップ 1 ビット）だけ**です。`data_bits:` などを変えても効きません。フロー制御（RTS / CTS）もありません
+- 相手の機器と送受信が逆なら、`txd_pin` と `rxd_pin` を入れ替えます
+- PIO の UART は 1 つだけで、`grove_link` も同じものを使います。同時には使えません
+- 次の版のファームウェアからは `grove_uart` も使えますが、この書き方もそのまま動きます
 
 ## そのほか
 

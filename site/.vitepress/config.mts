@@ -17,8 +17,9 @@ export default defineConfig({
   base,
   cleanUrls: true,
   lastUpdated: false,
-  // Notes for whoever works on the site, not a page of it.
-  srcExclude: ['README.md'],
+  // Notes for whoever works on the site, not a page of it. guide/usb-midi.md
+  // waits for the firmware that has USB MIDI built in (dev-docs/usb-midi/).
+  srcExclude: ['README.md', 'guide/usb-midi.md'],
 
   // The console (sim/) is copied in after the build by `rake site:build`,
   // so VitePress does not know it is there.
@@ -64,8 +65,8 @@ export default defineConfig({
             { text: '基板の各部', link: '/guide/board' },
             { text: 'コンソールを使う', link: '/guide/console' },
             { text: 'R2P2のシェル', link: '/guide/shell' },
-            { text: 'ファームウェアの書き込み', link: '/guide/firmware' },
-            { text: 'USB MIDI で鳴らす', link: '/guide/usb-midi' }
+            { text: 'ファームウェアの書き込み', link: '/guide/firmware' }
+            // { text: 'USB MIDI で鳴らす', link: '/guide/usb-midi' },  // 公開は USB MIDI 入りのファームのとき
           ]
         }
       ],

@@ -1,21 +1,27 @@
 # USB MIDI で鳴らす
 
-**USB MIDI 版**のファームウェアを書き込むと、Adventure Board がパソコンから **USB MIDI の楽器**に見えます。
+<!-- 仮の文（2026-11-07）。USB の構成をコンソールで選ぶ仕組みができたら、画面の名前と手順を合わせる。
+     それまでガイドを deploy しないこと。 -->
+
+USB MIDI を有効にすると、Adventure Board がパソコンから **USB MIDI の楽器**に見えます。
 DAW（GarageBand、Ableton Live、Cubase など）や、Web MIDI に対応したブラウザのページから
 MIDI を送ると、基板のスピーカーで鳴ります。
 
-USB MIDI 版はふつうのファームウェアとは**別のファイル**です。ふつうの版には MIDI の機能が入っていません。
+## 1. USB MIDI を有効にする
 
-## 1. USB MIDI 版を書き込む
+USB MIDI は、最初は**オフ**になっています（パソコンからはシリアルポートが 1 つ見えるだけです）。
 
-[リリースのページ](https://github.com/picorubykaigi/adventure-board-firmware/releases) から、
-名前が `-midi.uf2` で終わるファイル（`adventure-board-2026.11.01-midi.uf2` のような名前）をダウンロードし、
-[ファームウェアの書き込み](./firmware) と同じ手順で書き込みます。
+1. [コンソール](./console) で基板につなぎます
+2. **USB の設定** を開き、**USB MIDI** を選びます
+3. 基板が再起動します
 
-ふつうの版に戻すときは、ふつうの `.uf2` を書き込み直します。どちらの版でも、ファイルやプログラムはそのまま残ります。
+再起動すると、パソコンからは**別の機器**に見えます（USB の中身が変わるため）。
+コンソールで基板を選び直してください。シリアル（WebSerial）は、これまでと同じように使えます。
 
-USB MIDI 版を書き込むと、パソコンからは**別の機器**に見えます（USB の中身が変わるため）。
-コンソールで基板を選び直してください。シリアル（WebSerial）は、ふつうの版と同じように使えます。
+元に戻すときは、同じ画面で **USB MIDI** を外します。ファイルやプログラムはそのまま残ります。
+
+USB MIDI を使うには、USB MIDI が入った版のファームウェアが要ります。古い版なら、
+[ファームウェアの書き込み](./firmware) の手順で新しい版を書き込んでください。
 
 ## 2. 楽器にする
 
@@ -71,5 +77,5 @@ midi.usb.putevent(:note_off, 0, 60, 0)
 （`:note_on`・`:note_off`・`:control_change`・`:program_change`・`:pitch_bend` など）、
 次がチャンネル（0〜15。チャンネル 1 が 0）です。MML の `Speaker` が使っているのと同じ形です。
 
-ふつうの版で `AdventureBoard.usb_midi` を呼ぶと、USB MIDI 版が要るというエラーになります。
+USB MIDI を有効にしていないときに `AdventureBoard.usb_midi` を呼ぶと、エラーになります。
 シミュレータでも動きません。
