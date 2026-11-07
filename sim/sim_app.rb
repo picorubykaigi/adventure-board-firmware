@@ -122,7 +122,8 @@ class SimApp < Funicular::Component
     "adventure_board/buttons.rb",
     "adventure_board/speaker.rb",
     "adventure_board/status_led.rb",
-    "adventure_board/grove_link.rb"
+    "adventure_board/grove_link.rb",
+    "adventure_board/usb_midi.rb"
   ]
 
   KEY_PINS = {

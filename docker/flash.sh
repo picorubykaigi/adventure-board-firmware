@@ -13,6 +13,7 @@ set -euo pipefail
 VM="${VM:-picoruby}"
 BOARD="${BOARD:-pico2}"
 MODE="${MODE:-prod}"
+VARIANT="${R2P2_USB_MIDI+-midi}"   # the USB MIDI build, as docker/build.sh names it
 ADAPTER_SPEED="${ADAPTER_SPEED:-5000}"
 
 # Rebooting is done through the watchdog rather than openocd's `reset`, which
@@ -42,8 +43,8 @@ if [ -z "$elf" ]; then
   # is the only one populated by a bare `rake r2p2:...`. Newest of the two wins.
   shopt -s nullglob
   candidates=(
-    "/work/dist/${VM}-${BOARD}-${MODE}"/R2P2*.elf
-    "/work/build/r2p2/${VM}/${BOARD}/${MODE}"/R2P2*.elf
+    "/work/dist/${VM}-${BOARD}-${MODE}${VARIANT}"/R2P2*.elf
+    "/work/build/r2p2/${VM}/${BOARD}${VARIANT}/${MODE}"/R2P2*.elf
   )
   if [ ${#candidates[@]} -eq 0 ]; then
     echo "No R2P2 .elf for ${VM}/${BOARD}/${MODE}." >&2

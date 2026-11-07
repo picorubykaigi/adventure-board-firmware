@@ -9,6 +9,9 @@ set -euo pipefail
 VM="${VM:-picoruby}"
 BOARD="${BOARD:-pico2}"
 MODE="${MODE:-prod}"
+# The USB MIDI build (R2P2_USB_MIDI set) has build directories of its own;
+# tasks/picoruby/r2p2.rake names them with the same suffix.
+VARIANT="${R2P2_USB_MIDI+-midi}"
 
 cd /work
 
@@ -23,8 +26,8 @@ rake "${VM}:${MODE}"
 
 rake "r2p2:${VM}:${BOARD}:${MODE}"
 
-out="/work/build/r2p2/${VM}/${BOARD}/${MODE}"
-dist="/work/dist/${VM}-${BOARD}-${MODE}"
+out="/work/build/r2p2/${VM}/${BOARD}${VARIANT}/${MODE}"
+dist="/work/dist/${VM}-${BOARD}-${MODE}${VARIANT}"
 mkdir -p "$dist"
 
 # The image name carries the commit, so the build directory accumulates one set
@@ -43,5 +46,5 @@ rm -f "$dist"/R2P2*.uf2 "$dist"/R2P2*.elf
 cp -v "$out/$stem".uf2 "$out/$stem".elf "$dist/"
 
 echo
-echo "Artifacts copied to dist/${VM}-${BOARD}-${MODE}/ :"
+echo "Artifacts copied to dist/${VM}-${BOARD}-${MODE}${VARIANT}/ :"
 ls -l "$dist"

@@ -51,8 +51,12 @@ endif()
 # written to the filesystem on first boot (see ports/rp2040/system_files.c),
 # because the UF2 does not reach the littlefs region. Generated here, before
 # the glob below picks it up.
+# (R2P2_USB_MIDI is the -D from rake; its option() is further down)
+if(R2P2_USB_MIDI)
+  set(PICORB_SYSTEM_FILES_FLAGS --usb-midi)
+endif()
 execute_process(
-  COMMAND ruby ${PICORUBY_ROOT}/tools/gen_system_files.rb
+  COMMAND ruby ${PICORUBY_ROOT}/tools/gen_system_files.rb ${PICORB_SYSTEM_FILES_FLAGS}
           ${PICORUBY_ROOT}/mrbgems/picoruby-r2p2/ports/rp2040/system_files_data.c
   RESULT_VARIABLE PICORB_SYSTEM_FILES_RESULT
 )
@@ -200,6 +204,22 @@ endif()
 option(R2P2_CONSOLE_UART "Also run the R2P2 console on PICO_DEFAULT_UART" OFF)
 if(R2P2_CONSOLE_UART)
   target_compile_definitions(${PROJECT_NAME} PRIVATE R2P2_CONSOLE_UART=1)
+endif()
+
+# Add a USB MIDI interface to the composite device (include/tusb_config.h,
+# ports/rp2040/usb_descriptors.c) and turn on the port of
+# picoruby-usb_midi_device (compiled into every build by the glob above, and
+# stubs without this). The descriptors stay R2P2's: the gem's own ones
+# (its ports/rp2040/usb_descriptors.c) are for a device that is only MIDI.
+# Set by `R2P2_USB_MIDI=1 rake r2p2:...`, which also builds libmruby with
+# the gem.
+option(R2P2_USB_MIDI "Also be a USB MIDI device" OFF)
+if(R2P2_USB_MIDI)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE
+    R2P2_USB_MIDI=1
+    USB_MIDI_DEVICE_ENABLED=1
+    USB_MIDI_DEVICE_OWN_DESCRIPTORS=0
+  )
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

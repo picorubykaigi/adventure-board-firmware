@@ -61,9 +61,15 @@ docker compose -f docker/compose.yml run --rm -e BOARD=pico2_w -e MODE=debug bui
 `MODE` is `prod` or `debug`; the same triple names the `docker:flash:...` task
 below.
 
-`PICORUBY_PSG_MCP4922_DMA`, `PICORUBY_PSG_PWM_DMA`, `R2P2_NO_SHARED_ALLOC`
-and `R2P2_CONSOLE_UART` are forwarded into the container when they are set on
-the host, so they act the same way as in a native build.
+`PICORUBY_PSG_MCP4922_DMA`, `PICORUBY_PSG_PWM_DMA`, `R2P2_NO_SHARED_ALLOC`,
+`R2P2_CONSOLE_UART` and `R2P2_USB_MIDI` are forwarded into the container when
+they are set on the host, so they act the same way as in a native build.
+
+`R2P2_USB_MIDI=1` builds the USB MIDI firmware (pico2 only): the board is also
+a USB MIDI device, played on its speaker. It has build directories of its own
+and lands in `dist/{vm}-{board}-{mode}-midi/`; flash it with the same variable
+set (`R2P2_USB_MIDI=1 rake docker:flash:picoruby:pico2:prod`). See
+[dev-docs/usb-midi/](../dev-docs/usb-midi/README.md).
 
 `R2P2_CONSOLE_UART=1` puts the R2P2 shell on the board's default UART (UART0,
 GPIO0/1, 115200) as well as on USB CDC -- for a board whose USB does not work,

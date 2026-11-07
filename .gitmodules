@@ -29,3 +29,6 @@
 [submodule "mrbgems/picoruby-funicular"]
 	path = mrbgems/picoruby-funicular
 	url = https://github.com/picoruby/funicular
+[submodule "mrbgems/picoruby-usb_midi_device"]
+	path = mrbgems/picoruby-usb_midi_device
+	url = https://github.com/kirikak2/picoruby-usb_midi_device.git

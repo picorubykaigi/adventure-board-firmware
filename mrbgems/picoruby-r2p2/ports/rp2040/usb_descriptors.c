@@ -42,6 +42,15 @@
 #define USB_PID           (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | \
                            _PID_MAP(MIDI, 3) | _PID_MAP(VENDOR, 4) )
 
+#if CFG_TUD_MIDI
+  // R2P2_USB_MIDI. The map above cannot tell: three HID instances (3 << 2)
+  // already set the MIDI bit, so it would stay 0x400F. A host remembers a
+  // device's interfaces by VID/PID, so the build with MIDI needs a PID of
+  // its own.
+  #undef  USB_PID
+  #define USB_PID         0x401F
+#endif
+
 #define USB_VID   0x16c0
 //#define USB_BCD   0x0200
 #define USB_BCD   0x0110
@@ -96,6 +105,10 @@ enum
   ITF_NUM_HID_KEYBOARD,
   ITF_NUM_HID_MOUSE,
   ITF_NUM_HID_CONSUMER,
+#if CFG_TUD_MIDI
+  ITF_NUM_MIDI,             // Audio Control
+  ITF_NUM_MIDI_STREAMING,
+#endif
   ITF_NUM_TOTAL
 };
 
@@ -175,7 +188,24 @@ enum
 
 #endif
 
-#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + CFG_TUD_CDC * TUD_CDC_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN)
+// Outside the #if below: CONFIG_TOTAL_LEN counts it times CFG_TUD_MIDI
+#define TUD_MIDI_IAD_LEN      8
+
+#if CFG_TUD_MIDI
+  // R2P2_USB_MIDI. After the last endpoint of the #else branch above, which
+  // is the one RP2040 / RP2350 take; the other branches are not provided for.
+  #define EPNUM_MIDI_OUT      0x0A
+  #define EPNUM_MIDI_IN       0x8A
+
+  // An IAD ties the Audio Control and MIDI Streaming interfaces into one
+  // function, as the other functions of this composite device are.
+  #define TUD_MIDI_IAD(_firstitf) \
+    TUD_MIDI_IAD_LEN, TUSB_DESC_INTERFACE_ASSOCIATION, _firstitf, 2, \
+    TUSB_CLASS_AUDIO, AUDIO_SUBCLASS_CONTROL, AUDIO_FUNC_PROTOCOL_CODE_UNDEF, 0
+#endif
+
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + CFG_TUD_CDC * TUD_CDC_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN + \
+                             CFG_TUD_MIDI * (TUD_MIDI_IAD_LEN + TUD_MIDI_DESC_LEN))
 
 // HID Report Descriptor for Keyboard
 uint8_t const desc_hid_keyboard_report[] =
@@ -231,6 +261,12 @@ uint8_t const desc_fs_configuration[] =
 
   // HID Consumer Control
   TUD_HID_DESCRIPTOR(ITF_NUM_HID_CONSUMER, 9, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_consumer_report), EPNUM_HID_CONSUMER, CFG_TUD_HID_EP_BUFSIZE, 10),
+
+#if CFG_TUD_MIDI
+  // USB MIDI (R2P2_USB_MIDI): Interface number, string index, EP Out & EP In address, EP size
+  TUD_MIDI_IAD(ITF_NUM_MIDI),
+  TUD_MIDI_DESCRIPTOR(ITF_NUM_MIDI, 10, EPNUM_MIDI_OUT, EPNUM_MIDI_IN, 64),
+#endif
 };
 
 #if TUD_OPT_HIGH_SPEED
@@ -260,6 +296,12 @@ uint8_t const desc_hs_configuration[] =
 
   // HID Consumer Control
   TUD_HID_DESCRIPTOR(ITF_NUM_HID_CONSUMER, 9, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_consumer_report), EPNUM_HID_CONSUMER, CFG_TUD_HID_EP_BUFSIZE, 10),
+
+#if CFG_TUD_MIDI
+  // USB MIDI (R2P2_USB_MIDI): Interface number, string index, EP Out & EP In address, EP size
+  TUD_MIDI_IAD(ITF_NUM_MIDI),
+  TUD_MIDI_DESCRIPTOR(ITF_NUM_MIDI, 10, EPNUM_MIDI_OUT, EPNUM_MIDI_IN, 512),
+#endif
 };
 
 // other speed configuration
@@ -351,6 +393,9 @@ char const *string_desc_arr[] =
   "PicoRuby HID Keyboard",       // 7: HID Keyboard
   "PicoRuby HID Mouse",          // 8: HID Mouse
   "PicoRuby HID Consumer Control", // 9: HID Consumer Control
+#if CFG_TUD_MIDI
+  "PicoRuby MIDI",               // 10: MIDI (R2P2_USB_MIDI)
+#endif
 };
 
 static uint16_t _desc_str[32 + 1];
