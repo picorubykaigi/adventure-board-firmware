@@ -307,6 +307,9 @@ module BoardView
     @moving = nil
     @bb_msg = tool_hint(view_tool)
     @parts_shown = nil
+    # The dot art editor's text box is made anew when the LED matrix view
+    # comes back, and would stay empty until the next dot.
+    @dot_art_editor_text_stale = true
     refresh
   end
 

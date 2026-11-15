@@ -546,6 +546,7 @@ class SimApp < Funicular::Component
       $board = Board.boot(i2c: $panel.i2c, speaker_backend: $audio_sink,
                           global_current: state[:gcc])
       $board.speaker.router.connect(:mml, $notelog)
+      show_dot_art if @dot_art_editor_on  # the picture being drawn stays
       patch(held: [], status: "リセットしました", kind: "ok")
       draw
     rescue Exception => e
